@@ -8,7 +8,7 @@ A project dedicated to taking in NFL data, cleaning it, exploring it, and drawin
 
 Player Data: The main data source used for this project was the dataset was the file "players.csv" taken from [this kaggle page.](https://www.kaggle.com/datasets/aryashah2k/beginners-sports-analytics-nfl-dataset?select=players.csv)
 
-College Data: For the inference section, we also used
+College Data: For the inference section, we also used the file "cfb17.csv" taken from [its own kaggle page.](https://www.kaggle.com/datasets/jeffgallini/college-football-team-stats-2019/data?select=cfb17.csv)
 
 ### Tools
 
