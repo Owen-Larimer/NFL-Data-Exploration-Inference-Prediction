@@ -2,7 +2,7 @@
 
 ### Project Overview
 
-A project dedicated to taking in NFL data, cleaning it, exploring it, and drawing conclusions and predictions from it.
+A project dedicated to taking in NFL data, cleaning it, exploring it, and drawing conclusions and predictions from it. The full project can be found in the "NFL_Explore_Infer_Predict.ipynb" file. In there you will find all three sections. The notebook is annotated at major points, including longer sectional discoveries at the end of each of the three portions. This page will be simpler and easier to read, and will be useful for those trying to skim what I've done here, but will not grasp the full extent of the project.
 
 ### Data Sources
 
