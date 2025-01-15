@@ -24,7 +24,12 @@ Jupyter Notebook
 ### EDA Phase
 
 #### Cleaning
-After doing "df.dtypes" to look at each column's type, it was clear that the data was already close to clean. The main issue I encountered was just that the heights of the players were not standardized. It was either in inches, like "72" or in a foot-inch format such as "6-0." Obviously the latter made it so that the data type of height was not numerical, which it had to be to be used as a feature in our later models. I decided to standardize the height to an inch format. This was done like so:
+We started by loading in the player data from "players.csv."
+
+After doing "df.dtypes" to look at each column's type, it was clear that the data was already close to clean. The main issue I encountered was just that the heights of the players were not standardized. It was either in inches, like "72" or in a foot-inch format such as "6-0." Obviously the latter made it so that the data type of height was not numerical, which it had to be to be used as a feature in our later models. I decided to standardize the height to an inch format. This was done like so: (Details and information regarding each section of code can be found in the actual notebook).
+
+This was the initial height column:
+![image](https://github.com/user-attachments/assets/4c425453-d2be-4911-a351-9bbd05bc0f7e)
 
 ```python
 nfl['height'] = nfl['height'].str.strip()
@@ -53,6 +58,34 @@ fixed_nfl = pd.concat([height_to_fix, good_heights])
 fixed_nfl = fixed_nfl.sort_index(ascending=True)
 fixed_nfl
 ```
+
+And this is what our height column looked like after this code:
+![image](https://github.com/user-attachments/assets/187b03d8-3ebb-4e05-a443-bea748f65346)
+
+Secondly, I turned the birthdate column into an actual datettime type so that I could use it to get ages for every player and use it in my later models IF wanted:
+
+```python
+fixed_bdates = pd.to_datetime(fixed_nfl['birthDate'], format='mixed')
+
+fixed_nfl['birthDate'] = fixed_bdates
+```
+
+I then made it into an age column. This dataset is from the 2018 NFL season, so our ages are determined from that:
+```python
+fixed_nfl['player_age'] = 2018 - fixed_nfl['birthDate'].dt.year
+fixed_nfl
+```
+
+Now running fixed_nfl.describe() gave us:
+![image](https://github.com/user-attachments/assets/69703b35-45df-4ee4-b2e7-7c32686bea97)
+
+And we could now use our numeric columns in the dataframe to get correlation coefficients for relevant columns:
+![image](https://github.com/user-attachments/assets/65b53c83-3947-40d7-8dc0-bacfc2191e4d)
+
+And we generated some pairplots to visualize the associations:
+![image](https://github.com/user-attachments/assets/8a20b565-657f-4011-98a3-f220a82bb928)
+
+Initially, I was expecting there to be some greater associations between player age and the physical columns (height and weight), but the associations are almost impossible to see due to how many factors go into each player. Position, initial size, and side of ball are all figures that influence a player's specimen.
 
 #### Visualizing
 W.I.P.
