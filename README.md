@@ -18,13 +18,41 @@ Jupyter Notebook
 - **Scipy.stats** - One Way ANOVA Test
 - **Sklearn.ensemble** - Random forest Classifer
 - **Sklearn.metrics** - Log Loss and Confusion Matricies
-- **Sklearn.neighbords** - KNN Classifier
+- **Sklearn.neighbors** - KNN Classifier
 - **Sklearn.model_selection** - Train Test Split and KFold
 
 ### EDA Phase
 
 #### Cleaning
-W.I.P.
+After doing "df.dtypes" to look at each column's type, it was clear that the data was already close to clean. The main issue I encountered was just that the heights of the players were not standardized. It was either in inches, like "72" or in a foot-inch format such as "6-0." Obviously the latter made it so that the data type of height was not numerical, which it had to be to be used as a feature in our later models. I decided to standardize the height to an inch format. This was done like so:
+
+```python
+nfl['height'] = nfl['height'].str.strip()
+heights_unfinished = nfl['height'].str[1] == '-'#nfl['height'].str[0] if nfl['height'][1] = '-'
+nfl['fix_height'] = heights_unfinished
+nfl
+
+height_to_fix = nfl[nfl['fix_height'] == True]
+
+int_feet = np.array([int(foot) for foot in height_to_fix['height'].str[0]])
+int_feet = int_feet * 12
+int_inches = np.array([int(inches) for inches in height_to_fix['height'].str[2:]])
+#int_inches
+int_height = int_feet + int_inches
+int_height
+
+height_to_fix['height'] = int_height
+height_to_fix
+
+good_heights = nfl[nfl['fix_height'] == False]
+good_heights['height'] = good_heights['height'].astype(int)#.dtypes
+good_heights.dtypes
+good_heights
+
+fixed_nfl = pd.concat([height_to_fix, good_heights])
+fixed_nfl = fixed_nfl.sort_index(ascending=True)
+fixed_nfl
+```
 
 #### Visualizing
 W.I.P.
