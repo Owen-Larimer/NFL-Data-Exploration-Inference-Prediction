@@ -138,7 +138,7 @@ Looking lastly at the CollegeName column of our fixed_nfl dataframe:
 and we can look at the values of the colleges:
 <img width="601" height="553" alt="image" src="https://github.com/user-attachments/assets/068564e6-b301-4cfe-8ea2-4ea7c31be6ba" />
 
-There are well over 200 colleges here. Makes sense, football players come from all over the country. About half of them have only 1, 2, or 3 players that come from them though. Let's see if we can find the colleges that have more NFL recruited players, we'll strike a balance. Trying 12 first.
+There are well over 200 colleges here. Makes sense, football players come from all over the country. About half of them have only 1, 2, or 3 players that come from them, though. Let's see if we can find the colleges that have more NFL recruited players, we'll strike a balance. Trying 12 first.
 
 <img width="1151" height="523" alt="image" src="https://github.com/user-attachments/assets/1402b95b-7883-4445-85bf-fe34744a3ebe" />
 
@@ -158,14 +158,158 @@ Our NFL data is from the 2018 portion of the 2018-19 season, so let's get our co
 
 My goal with this set is to use it's "Team" column (which is just the college's name and it's conference), along with the collegeName column in the "fixed_nfl" dataframe to get college conferences for each player in the NFL. It'll take some work, and some nifty cleaning tricks, to extract the conference and put it into the correct places for each player. Once again, the full process is available in the file, but I'll go through some steps here:
 
+Looking at the value counts for cfb:
+```python
+cfb['Team'].value_counts()
+```
+
+It appears to be in a specific format: "<School>" "(<conference>)". We can take advantage of that with RegEx:
+
+```python
+cfb['Team'] = cfb['Team'].replace('Miami (FL) (ACC)', 'Miami (ACC)')
+cfb['Team'] = cfb['Team'].replace('Miami (OH) (MAC)', 'Miami, O. (MAC)')
+
+cfb[['school', 'conference']] = cfb['Team'].str.extract(r'^(.*)\((.*)\)$')
+```
+
+And now our cfb dataframe has a school column and a conference column.
+
+They were added to the back of the cfb dataset. Let's make sure the parsing went well by checking for spaces:
+```python
+cfb['school'].str.len()
+```
+It says Air Force has 10 and Akron has 6, 1 more than is true, let's strip that column and the conference column:
+
+```python
+cfb['school'] = cfb['school'].str.strip()
+cfb['school'].str.len()
+cfb['conference'] = cfb['conference'].str.strip()
+```
+
+And we only want the conferences and schools to join on our original set, so let's make it easier by just grabbing those in it's own dataframe. We can always come back to the numerical data later on.
+
+```python
+cfb_conferences = cfb[['school', 'conference']]
+cfb_conferences
+```
+
+<img width="485" height="838" alt="image" src="https://github.com/user-attachments/assets/176ce12f-269a-4268-bc7b-113b8c5ee564" />
+
+It looks like not all of our schools match in the fixed_nfl and the cfb_conferences sets. Some are shortened. We might have to change some manually, but let's start by extending all of the state schools to "State" instead of "St."
+
+```python
+cfb_conferences['school'] = cfb_conferences['school'].str.replace("St.", "State")
+
+# Let's check that
+cfb_conferences[cfb_conferences['school'].str.contains("St.", case=True, na=False)]
+```
+<img width="469" height="537" alt="image" src="https://github.com/user-attachments/assets/fbdecb25-9124-4218-aa60-9338e9032557" />
+
+Now let's check the two school columns against each other, this will make it much easier to manually change the data if needed:
+
+```python
+nfl_schools = pd.Series(fixed_nfl['collegeName'].unique())
+nfl_schools_frame = nfl_schools.to_frame()
+nfl_schools_frame['in_both'] = nfl_schools_frame[0].isin(cfb_conferences['school'])
+nfl_schools_frame[nfl_schools_frame['in_both'] == False].head(50)
+```
+<img width="459" height="595" alt="image" src="https://github.com/user-attachments/assets/9b67f9f5-0d33-47a7-9af0-c968cafc8ebc" />
 
 
+Seems like most aren't in both...It looks like we will have to change a number of colleges. We'll mostly focus on the most prominent ones, like LSU and Ole Miss and the Michigan schools. If we discover any later on, we can always change them.
+
+We have to change them within the cfb_conferences dataframe. We'll check back on the nfl_schools_frame every once in a while to make sure it works (Will just have to rerun the cell above).
+
+```python
+
+#cfb_conferences['school'] = cfb_conferences['school'].replace('LSU', 'Louisiana State') - Special Case where both are present in nfl_fixed
+cfb_conferences['school'] = cfb_conferences['school'].replace('Ole Miss', 'Mississippi')
+#cfb_conferences[cfb_conferences['school'].str.contains("Mich", case=True, na=False)]
+cfb_conferences['school'] = cfb_conferences['school'].str.replace("Mich.$", "Michigan", regex=True)
+cfb_conferences['school'] = cfb_conferences['school'].replace('UNLV', 'Nevada-Las Vegas')
+cfb_conferences['school'] = cfb_conferences['school'].replace('SMU', 'Southern Methodist')
+cfb_conferences['school'] = cfb_conferences['school'].replace('South Fla.', 'South Florida')
+cfb_conferences['school'] = cfb_conferences['school'].replace('Western Ky.', 'Western Kentucky')
+cfb_conferences['school'] = cfb_conferences['school'].replace('UConn', 'Connecticut')
+cfb_conferences['school'] = cfb_conferences['school'].replace('NC State', 'North Carolina State')
+cfb_conferences['school'] = cfb_conferences['school'].replace('Southern Miss.', 'Southern Mississippi')
+
+fixed_nfl['collegeName'] = fixed_nfl['collegeName'].replace('Louisiana State', 'LSU')
+
+```
+
+Perfect. Check the cfb_conferences dataframe:
+<img width="475" height="797" alt="image" src="https://github.com/user-attachments/assets/9ef99961-ff67-4d2e-aedd-04c52d3745ce" />
 
 
+And it looks good. Let's merge them!
+
+```python
+fixed_nfl = fixed_nfl.merge(cfb_conferences, left_on = 'collegeName', right_on = 'school', how='left').drop(columns=['school'])
+fixed_nfl
+fixed_nfl.rename({'conference': 'collegeConference'}, axis=1, inplace=True)
+```
+
+<img width="1850" height="431" alt="image" src="https://github.com/user-attachments/assets/1011ffcf-4df0-4417-9c1d-fe44431d9e65" />
 
 
+We'll change the value of all NAs to 'Other' moving forward, since we have a good amount of schools, and we'll visualize our players now by conference:
+
+```python
+fixed_nfl.loc[fixed_nfl['collegeConference'].isna(), 'collegeConference'] = 'Other'
+
+conference_values = fixed_nfl['collegeConference'].value_counts()
+
+sns.barplot(x=conference_values.index, y=conference_values.values)
+
+plt.xlabel('College Conference')
+plt.ylabel('Number of Players')
+plt.title('Number of NFL Players per College Conference')
+plt.xticks(rotation=45)
+```
+
+<img width="1142" height="1048" alt="image" src="https://github.com/user-attachments/assets/f2beefe0-910f-43a2-8129-e9c8c6e90418" />
 
 
+I did some more brute force work to fix some more schools:
+
+```python
+fixed_nfl.loc[fixed_nfl["collegeName"] == "Central Florida", "collegeConference"] = "AAC" #Were in AAC up until 2021
+fixed_nfl.loc[fixed_nfl["collegeName"] == "North Dakota State", "collegeConference"] = "MVFC"
+fixed_nfl.loc[fixed_nfl["collegeName"] == "Texas Christian", "collegeConference"] = "Big 12"
+fixed_nfl.loc[fixed_nfl["collegeName"] == "Northern Illinois", "collegeConference"] = "MAC"
+fixed_nfl.loc[fixed_nfl["collegeName"] == "Illinois State", "collegeConference"] = "MVFC"
+fixed_nfl.loc[fixed_nfl["collegeName"] == "Florida Atlantic", "collegeConference"] = "AAC"
+fixed_nfl.loc[fixed_nfl["collegeName"] == "Eastern Washington", "collegeConference"] = "Big Sky"
+fixed_nfl.loc[fixed_nfl["collegeName"] == "Georgia Southern", "collegeConference"] = "Sun Belt"
+fixed_nfl.loc[fixed_nfl["collegeName"] == "James Madison", "collegeConference"] = "Sun Belt"
+fixed_nfl.loc[fixed_nfl["collegeName"] == "Coastal Carolina", "collegeConference"] = "Sun Belt"
+fixed_nfl.loc[fixed_nfl["collegeName"] == "Portland State", "collegeConference"] = "Big Sky"
+fixed_nfl.loc[fixed_nfl["collegeName"] == "Miami (Fla.)", "collegeConference"] = "ACC"
+fixed_nfl.loc[fixed_nfl["collegeName"] == "Middle Tennessee", "collegeConference"] = "C-USA"
+fixed_nfl.loc[fixed_nfl["collegeName"] == "Northern Iowa", "collegeConference"] = "MVFC"
+fixed_nfl.loc[fixed_nfl["collegeName"] == "Samford", "collegeConference"] = "SoCon"
+fixed_nfl.loc[fixed_nfl["collegeName"] == "Western Carolina", "collegeConference"] = "SoCon"
+fixed_nfl.loc[fixed_nfl["collegeName"] == "Alabama-Birmingham", "collegeConference"] = "AAC"
+fixed_nfl.loc[fixed_nfl["collegeName"] == "Louisiana-Lafayette", "collegeConference"] = "Sun Belt"
+fixed_nfl.loc[fixed_nfl["collegeName"] == "Florida International", "collegeConference"] = "C-USA"
+fixed_nfl.loc[fixed_nfl["collegeName"] == "Sacramento State", "collegeConference"] = "Big Sky"
+fixed_nfl.loc[fixed_nfl["collegeName"] == "Chattanooga", "collegeConference"] = "SoCon"
+```
+
+Which leaves us with a finished dataset as so:
+<img width="1675" height="418" alt="image" src="https://github.com/user-attachments/assets/5d84a398-ada8-4dea-8880-16c29746376f" />
+
+And values:
+<img width="376" height="626" alt="image" src="https://github.com/user-attachments/assets/03d7a0ab-b316-4bb5-8326-ef2820c0f336" />
+
+#### Initial Impressions:
+
+I have a fair amount of categorical data. But I also some good numerical data that might be useful in pairing with some of those categories. I am particularly curious about heights/weights grouped by positions, and with the new conferences I pulled in, I wonder about which conferences have the most height or weight at certain positions. Furthermore, I am curious whether you could predict the college or more likely conference of a player in the NFL based on their size, age, and position. That might reveal what colleges look for in recruitment for specific positions. Perhaps tall, yet light receivers in the NFL are more likely to come from the Pac-12, and heavier, shorter running backs come more often from the SEC. We could get more position specific in our precictions as well. Someone who is older in our dataset has been in the league a long time. Perhaps their height/weight at their position is a good reason, and maybe that can be used to determine which conferences have longest lasting NFL players.
+
+The positions themselves are particularly interesting to me. What makes a good player at each position? Are there any trends for younger vs older players at each position? etc.
+
+I don't think I will, but if I struggle to really find something to predict, I also have backup college football team statistics from the year prior to this, which can possibly be used by itself or in conjuction with the NFL data I have in other ways.
 
 
 
