@@ -88,7 +88,53 @@ And we generated some pairplots to visualize the associations:
 Initially, I was expecting there to be some greater associations between player age and the physical columns (height and weight), but the associations are almost impossible to see due to how many factors go into each player. Position, initial size, and side of ball are all figures that influence a player's specimen.
 
 #### Visualizing
-W.I.P.
+Moving onto initial visualization, I just want some basic figures to see relationships across different variables.
+
+For example, this heights by position figure:
+![image](https://github.com/user-attachments/assets/23cd5141-a3f0-44e6-a9d7-395109d598fc)
+
+Using the code:
+```python
+heights_by_position = fixed_nfl.groupby('position')['height'].mean()
+heights_by_position = heights_by_position.sort_values(ascending=True)
+sns.barplot(x=heights_by_position.values, y=heights_by_position.index, hue=heights_by_position.index)
+plt.ylabel('Position')
+plt.xlabel('Average Height (in)')
+plt.title('Average Height by Position')
+
+for index, value in enumerate(heights_by_position.values):
+    plt.text(value + 0.2, index, f'{value:.2f}', va='center', color='black', fontsize=8)
+```
+The groupby just makes it much easier to chart the figure.
+
+**NOTE:** Normally we would not want a bar chart with such large bars and close values. The data-to-ink ratio is very small and overall it just does too much. Best practice would be to instead have points or markers, but with the large amount of positional groups it can become hard to correlate a ytick value with it's dot, and legends become clunky with so many values. 
+
+We could also shorten the x-axis intentionally with something like:
+
+```python
+ax = sns.barplot(x=heights_by_position.values, y=heights_by_position.index, hue=heights_by_position.index)
+ax.set_xlim(65, 85)
+```
+
+for a result more like:
+![image](<img width="1259" height="898" alt="image" src="https://github.com/user-attachments/assets/49a68119-75cc-4d82-8117-6b471d9a63fb" />)
+
+
+This allows us to see differences across the observations very easily, but they are exaggerated by not including 0.
+
+We can also do a similar chart for weight:
+
+![image](<img width="1305" height="895" alt="image" src="https://github.com/user-attachments/assets/2d0b5ab6-85d8-407b-a8ff-d339db894833" />)
+
+From these two figures it's clear 
+
+
+
+
+
+
+
+
 
 ### Inference 
 W.I.P.
