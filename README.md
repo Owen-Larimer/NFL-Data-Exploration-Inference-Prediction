@@ -121,22 +121,44 @@ for a result more like:
 
 This allows us to see differences across the observations very easily, but they are exaggerated by not including 0.
 
-We can also do a similar chart for weight:
+We can also do a similar chart for weight (pictured below) or age:
 
 ![image](https://github.com/user-attachments/assets/82cc9e0f-9152-4b72-aba2-79f3269cd3df)
 
 From these two figures it's clear that cornerbacks and wide receivers are our lightest positions, nose and defensive tackles are the heaviest, runningbacks are our shortest, and tight ends are our tallest.
 
 If we also want to better visualize the association between height and weight, we can do something like:
-![image]("https://github.com/user-attachments/assets/aa3c6884-f5f1-4462-b445-eff1ac7ddfe6")
+![image](https://github.com/user-attachments/assets/aa3c6884-f5f1-4462-b445-eff1ac7ddfe6)
+
+
+
+Looking lastly at the CollegeName column of our fixed_nfl dataframe:
+![image](https://github.com/user-attachments/assets/8b8ceaae-1470-45c3-a021-0dce64f8258f)
+
+and we can look at the values of the colleges:
+<img width="601" height="553" alt="image" src="https://github.com/user-attachments/assets/068564e6-b301-4cfe-8ea2-4ea7c31be6ba" />
+
+There are well over 200 colleges here. Makes sense, football players come from all over the country. About half of them have only 1, 2, or 3 players that come from them though. Let's see if we can find the colleges that have more NFL recruited players, we'll strike a balance. Trying 12 first.
+
+<img width="1151" height="523" alt="image" src="https://github.com/user-attachments/assets/1402b95b-7883-4445-85bf-fe34744a3ebe" />
+
+
+So, there are way too many schools to properly analyze them all individually, but if we reduce the schools then we lose player data. How can we remedy this?
+
+Perhaps we should look at a conferences instead. Most of the schools NFL players come from are part of some larger NCAA conference, such as PAC-12, BIG-10, or SEC. If we can get data on the schools and what conference they are part of, we can join that data with our fixed_nfl to get a conference associated with each player. Then, we have fewer groups to compare and more data in each group. And schools that are not part of specific conferences or from more obscure ones can be grouped together as "other" or "unaffiliated."
+
+Our NFL data is from the 2018 portion of the 2018-19 season, so let's get our college football conference data from the 2017-18 year. It is important for us to keep in mind that some conferences do change with restructuring, so these conferences might not be accurate to today's structure, and some of these players' schools may have been in different conferences when they were there or drafted. Let's do that below:
 
 
 
 
+#### College Football Dataset:
 **Also** in this cleaning section, we took another dataset, the "cfb17.csv" set. Here it is loaded into Jupyter:
 ![image](https://github.com/user-attachments/assets/24d74f2c-6238-4a36-993e-2be59a96845c)
 
 My goal with this set is to use it's "Team" column (which is just the college's name and it's conference), along with the collegeName column in the "fixed_nfl" dataframe to get college conferences for each player in the NFL. It'll take some work, and some nifty cleaning tricks, to extract the conference and put it into the correct places for each player. Once again, the full process is available in the file, but I'll go through some steps here:
+
+
 
 
 
