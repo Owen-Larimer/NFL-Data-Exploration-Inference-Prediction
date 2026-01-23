@@ -107,7 +107,7 @@ for index, value in enumerate(heights_by_position.values):
 ```
 The groupby just makes it much easier to chart the figure.
 
-**NOTE:** Normally we would not want a bar chart with such large bars and close values. The data-to-ink ratio is very small and overall it just does too much. Best practice would be to instead have points or markers, but with the large amount of positional groups it can become hard to correlate a ytick value with it's dot, and legends become clunky with so many values. 
+**NOTE:** Normally we would not want a bar chart with such large bars and close values. The data-to-ink ratio is very small and overall it just does too much. Best practice would be to instead have points or markers, but with the large amount of positional groups it can become hard to correlate a ytick value with it's dot, and legends become clunky with so many values. Also, the color palette here is UGLY. We want something better than a rainbow, like a sequential palette.
 
 We could also shorten the x-axis intentionally with something like:
 
@@ -117,16 +117,27 @@ ax.set_xlim(65, 85)
 ```
 
 for a result more like:
-![image](<img width="1259" height="898" alt="image" src="https://github.com/user-attachments/assets/49a68119-75cc-4d82-8117-6b471d9a63fb" />)
-
+![image](https://github.com/user-attachments/assets/1c39bda9-e060-450a-b45b-2100429efc92)
 
 This allows us to see differences across the observations very easily, but they are exaggerated by not including 0.
 
 We can also do a similar chart for weight:
 
-![image](<img width="1305" height="895" alt="image" src="https://github.com/user-attachments/assets/2d0b5ab6-85d8-407b-a8ff-d339db894833" />)
+![image](https://github.com/user-attachments/assets/82cc9e0f-9152-4b72-aba2-79f3269cd3df)
 
-From these two figures it's clear 
+From these two figures it's clear that cornerbacks and wide receivers are our lightest positions, nose and defensive tackles are the heaviest, runningbacks are our shortest, and tight ends are our tallest.
+
+If we also want to better visualize the association between height and weight, we can do something like:
+![image]("https://github.com/user-attachments/assets/aa3c6884-f5f1-4462-b445-eff1ac7ddfe6")
+
+
+
+
+**Also** in this cleaning section, we took another dataset, the "cfb17.csv" set. Here it is loaded into Jupyter:
+![image](https://github.com/user-attachments/assets/24d74f2c-6238-4a36-993e-2be59a96845c)
+
+My goal with this set is to use it's "Team" column (which is just the college's name and it's conference), along with the collegeName column in the "fixed_nfl" dataframe to get college conferences for each player in the NFL. It'll take some work, and some nifty cleaning tricks, to extract the conference and put it into the correct places for each player. Once again, the full process is available in the file, but I'll go through some steps here:
+
 
 
 
@@ -137,7 +148,15 @@ From these two figures it's clear
 
 
 ### Inference 
-W.I.P.
+Moving onto inference. I want to make a hypothesis; something I'm able to learn from, evaluate a relevant association, and then bootstrap to create a confidence interval.
+
+I'm interested in what conferences produce what size of players. For instance, the SEC is widely considered the football powerhouse conference. I might expect players in the NFL who played in the SEC to be significantly bigger than NFL players who played in other conferences. I could combine height and weight into its own variable "size", but I would rather look at both of them separately to see their differences.
+
+**Alternative Hypothesis:** At least one college conference produces players with significantly different mean heights (or weights) compared to the other conferences.
+
+**Null Hypothesis:** The average height and weight of NFL players does not vary significantly across college conferences.
+
+
 
 ### Prediction
 W.I.P.
