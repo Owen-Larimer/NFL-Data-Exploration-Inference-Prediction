@@ -320,12 +320,250 @@ I'm interested in what conferences produce what size of players. For instance, t
 
 **Alternative Hypothesis:** At least one college conference produces players with significantly different mean heights (or weights) compared to the other conferences.
 
-**Null Hypothesis:** The average height and weight of NFL players does not vary significantly across college conferences.
+**Null Hypothesis:** The average height and weight of NFL players does not vary significantly across college conferences.  
 
+
+
+<img width="895" height="147" alt="image" src="https://github.com/user-attachments/assets/7f81cae2-40eb-41a8-b682-5e10308712fa" />  
+
+We'll start with conferences that have more than 20 players from them. 11 + 1 'Other' group for us to look at.  
+
+We will use an ANOVA (Analysis of Variance) test to compare our groups means/variances against each other, looking for any notable differences. This test does not have high variance in itself, making it good for inference. We will do a one-way ANOVA test with each of height and weight.. I found information on what the test is here: [ANOVA test info page](https://www.scribbr.com/statistics/one-way-anova/#:~:text=ANOVA%2C%20which%20stands%20for%20Analysis,ANOVA%20uses%20two%20independent%20variables).  
+
+First, let's filter out only the conferences with 20+ players
+
+```python
+confs = fixed_nfl['collegeConference'].value_counts()
+valid_confs = confs[confs >= 20].index
+filtered_nfl = fixed_nfl[fixed_nfl['collegeConference'].isin(valid_confs)]
+#confs
+#valid_confs
+filtered_nfl.head()
+```  
+
+<img width="1595" height="372" alt="image" src="https://github.com/user-attachments/assets/0580a25c-93c4-47d1-825f-2639ebe02b50" />  
+
+And let's do some plots so it's clear what relationships we're trying to present:
+
+```python
+mean_vals = filtered_nfl.groupby('collegeConference')[['height', 'weight']].mean().reset_index()
+
+plt.figure(figsize=(15, 5))
+
+# One for Height
+plt.subplot(1, 2, 1)
+plt1 = sns.barplot(data=mean_vals, x='collegeConference', y='height', hue='collegeConference', palette='rocket')
+plt.title('Mean Heights in College Conferences With Over 20 NFL Players')
+plt.xlabel('NCAA Conference')
+plt.ylabel('Mean Height (Inches)')
+plt.xticks(rotation=45)
+
+# Adding ticks
+for val in plt1.patches:
+    plt1.annotate(f'{val.get_height():.2f}', 
+                 (val.get_x() + val.get_width() / 2., val.get_height()), 
+                 xytext=(0, 5),  # 5 points vertical offset
+                 textcoords='offset points', 
+                 ha='center', va='bottom', fontsize=8, color='black')
+
+# One for Weight
+plt.subplot(1, 2, 2)
+plt2 = sns.barplot(data=mean_vals, x='collegeConference', y='weight', hue='collegeConference', palette='mako')
+plt.title('Mean Weights in College Conferences With Over 20 NFL Players')
+plt.xlabel('NCAA Conference')
+plt.ylabel('Mean Weight (Pounds)')
+plt.xticks(rotation=45)
+
+for val in plt2.patches:
+    plt2.annotate(f'{val.get_height():.2f}', 
+                 (val.get_x() + val.get_width() / 2., val.get_height()), 
+                 xytext=(0, 5),  # 5 points vertical offset
+                 textcoords='offset points', 
+                 ha='center', va='bottom', fontsize=8)
+
+```  
+<img width="2473" height="1084" alt="image" src="https://github.com/user-attachments/assets/e00c98c6-bc34-4a03-b9c4-0184613ad18a" />  
+
+
+And now we can begin our analysis with **height**. Let's do the one-way with that first:
+
+```python
+from scipy.stats import f_oneway
+
+#filtered_nfl.groupby('collegeConference')['height'].mean()
+height_groups = [group['height'].values for _, group in filtered_nfl.groupby('collegeConference')]
+one_way_results_height = f_oneway(*height_groups)
+one_way_results_height
+```
+
+Which resulted in:
+```python
+F_onewayResult(statistic=1.4288627207256122, pvalue=0.15359133079569412)
+```
+
+In this first part of our analysis, we tested whether the average height of NFL players differed significantly based on their college's athletic conference. Let us first recognize that our null hypothesis (for height portion) was that the mean height of NFL players does not vary significantly by college conference. In this case, we got an f-statistic, not a t-statistic. Where a t-statistic compares means between two groups for statistical differences, an f-statistic can compare between multiple different groups and (according to the resources I was using) will be able to tell you if there is significant difference between any pair of the groups.
+
+For height, we got an f-statistic of ~1.429. This is relatively low, as it is very close to 1, and it indicates that even if the variability within groups somewhat large (like as a result of positions), the variability between groups (conference averages) is rather low in comparison. By that statistic, we can likely say that there is no huge difference in NFL players heights based upon what conference they were in in college.
+
+The p-value is a low 0.154. The most typical p-value cutoff we use is 0.05. Because our p-value is much larger than the cutoff, it can be reasonably said that any variation between the groups is likely due to chance. These results suggest that we have low confidence in rejecting the null hypothesis, and thus we fail to reject it.
+
+In other words: The difference in average height of NFL players is not statistically significant across all college conferences.
+
+And we can now do the same thing with **weight**:
+
+```python
+weight_groups = [group['weight'].values for _, group in filtered_nfl.groupby('collegeConference')]
+one_way_results_weight = f_oneway(*weight_groups)
+one_way_results_weight
+```
+
+Results in: 
+```python
+F_onewayResult(statistic=0.916356722706692, pvalue=0.5235975579978585)
+```
+
+In this section of our analysis, we tested whether college conference has any bearing on weights of NFL players. Let us restate that our null hypothesis (for weight portion) was that the mean weight of NFL players does not vary significantly by college conference. Again we got an f-statistic and a p-value from our ANOVA one way test.
+
+Our weight f-statistic is ~0.9164. This is even closer to 1, and it indicates that our weight variability between conferences is lower than that of within the individual groups, and even moreso than in our height analysis. We obtained a corresponding p-value of around 0.524, which is much larger than the standard cutoff of 0.05. This p-value again indicates a low confidence in rejecting the null hypothesis.
+
+Given such results, we again fail to reject the null hypothesis, or, in other words, our findings are strong evidence that the average weight of NFL players does not appear to vary significantly by college conference, as any observed numerical differences are most likely a result of chance.
+
+And thus we fail to reject the overall null hypothesis that the average height and weight of NFL players does not differ significantly across college conferences.
+
+
+#### Thoughts:
+Honestly, I was actually expecting there to be a significant difference in means for at least some of the conferences. One of my prediction was that the SEC would dominate the others, especially in weight category. It seems as though SEC players, especially linemen, tend to be much heavier than the other conferences' players. Not only was that not true, but weight had even less variation between groups than height did, which I thought was strange since weights vary so much more than heights ever can. I suppose my findings indicate that conferences do not really get large streams of recruits that are much bigger than the recruits of others. This makes sense, since teams are generally made up of the same amount of each position, and each position group will have its own mean heights and weights that don't greatly vary. In a greater scale, this does not prove but may indicate that roughly all positions are represented from all conferences in the NFL. Otherwise, if for example many NFL lineman come from the PAC-12, we might see a greater f-statistic in the weight analysis in favor of PAC-12 (since our initial grouping was by conference, not position).
+
+#### Assumptions:
+In terms of assumptions:
+
+Our ANOVA test assumes that our observations are independent of each other. This is a valid assumption for our set, since players' heights and weights do not rest upon the heights and weights of others.
+Our data should be approximately normal, which both of our NFL heights and weights variables are (See histograms below). Weights skew right since there more heavier players like linemen on a single team, but that should be representative of all teams and ideally across all conferences.
+Random sampling is an assumption of an ANOVA test, and this may not always be true. Certain positions will always be represented more than others, and players are drafted based on a team's needs, not necessarily the makeup of that player. In our case though, there are a number of representations of many sizes at each position, and the distribution of positions in the NFL will remain relatively constant, so that's the population we have to work with.
+
+#### Considerations:
+I think it is important to note that a test such as this may be inherently flawed by the idea that the NFL will tend to draft guys that fit the "perfect" size/frame for their position. A heavier or lighter player might not be in the dataset because they were not drafted into the NFL league. Additionally, it is possible and even likely that players drafted into the NFL might grow more (if they are young) and will almost certainly fill out their frames even more, increasing their weight in their first few NFL years. Thus these given heights, but more importantly weights may not vary as much as when these players were in college. It is still very much possible that the SEC does have significant sizae advantage, it's just that we discovered with this test that we cannot glean that just from those players who made it into the NFL. In a dataset with a huge amount of college athletes, we could do a similar test and find very different findings with that data. Lastly, I think it's important to remember that this dataset is for the 2018 NFL season. Players change, conferences realign (especially in recent years), and certain strategies leave in the NFL along with the players. As such, it is very possible for these findings to be different now, 6 years later.
 
 
 ### Prediction
-W.I.P.
+
+Now onto our prediction section:
+
+##### Question: Can we predict a player's position based on their age, height, weight, and perhaps conference as well?
+We'll try a few different models, select features, and do our best to reduce error. We'll need to subset into a train-test split.  
+
+I am somewhat concerned about the AMOUNT of groups our model needs to choose between when predicting. There are so many positions, and some are certainly very closely related to others.
+
+Additionally, some of the positions, especially the bottom 3 (HB, NT, and K) have very few observations in my data, and thus may not provide enough reliable data to accurately classify those positions. I am unsure whether this will effect the model as a whole though.
+
+I have 3 possible solutions assuming that it does hurt the model:
+
+I could abolish those positions altogether, K, HB, and NT are not hugely important positions to begin with and I could just take those (and possibly others if necessary) out of my dataframe completely. The issue with that is I am not sure how it will effect the predictions of the other positions. Would those change?
+I could merge those positions. This wouldn't work for Kicker, so solution 1 might still have to apply there, but Halfback (HB) and Nose Tackle (NT) are essentially just subtypes of greater positions (Runningbacks and Defensive Tackles). I could merge those subtypes with their parent positions, which would solve the sample size problem. However, these subtypes exist for a reason, and could have notable differences from their parents. Merging them with their parents will taint the parents' group data, effecting the model, perhaps not by much, but almost certainly affecting it.
+Like opion 1, I could reduce the number of positions I am classifying between as a whole. I might choose to only try and classify between WR, CB, RB, TE, QB, OLB, and maybe a safety. Those are generally the most notable and important positions on the field + LB, and they encompass the vast majority of body types and skills in football. This is what I think will end up being done.
+I think I will try the model as it stands first, and see how it goes. If my accuracy is 95% normally then none of this matters. I'll adjust my approach as I see fit.
+
+Start with features:
+Let's get all our possible features in a dataframe and our positions we want to predict. Lets first look at what our clusters might look like. We will also have to convert our positions to numbers in order to get our random forest classifier to work:
+
+```python
+pred_df = fixed_nfl[['height','weight', 'player_age', 'position']]
+sns.scatterplot(x=pred_df['player_age'], y=pred_df['weight'], hue=pred_df['position'])
+plt.legend()
+pred_df.loc[:,"position"] = pred_df["position"].replace(["WR","CB", "RB", "TE", "OLB", 'QB',
+                                                    'FS', 'SS', 'LB', 'ILB', 'DE', 'DB',
+                                                    'MLB', 'DT', 'FB', 'P', 'LS', 'S', 'HB',
+                                                    'NT', 'K'], [0, 1, 2, 3, 4,
+                                                                5, 6, 7, 8, 9,
+                                                                10, 11, 12, 13, 14,
+                                                                15, 16, 17, 18, 19, 20])
+X = pred_df.drop("position", axis = 1)
+y = pred_df['position']
+```
+Giving us: 
+<img width="1140" height="943" alt="image" src="https://github.com/user-attachments/assets/50dc9eb0-ef97-4c2f-b236-750c8a6250e0" />
+
+It looks like our clusters are not very clear. There is not a lot of clear sections of data points, and it's pretty scattered. It is possible though that we can't see some clear clusters because the points are too close together. Let's do our classifier to see.
+
+Now let's fit the model. I will start without the train-test split because I want to see the results without it first:
+
+```python
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import log_loss
+
+rfc = RandomForestClassifier()
+
+rfc_fit = rfc.fit(X, y.astype(int))
+y_preds = rfc_fit.predict(X)
+```
+
+Let's see how accurate our model was: 
+<img width="643" height="170" alt="image" src="https://github.com/user-attachments/assets/c686dbbc-63a6-4082-ae11-5f0ddcce6a8d" />
+
+90% accuracy is pretty good from the general perspective. However, the class imbalance still concerns me. If our model classified everything as a WR (0), the model would still be 5% correct. It doesn't seem like much, but what if the model is bias towards the top 3 or 4 classes, then only guessing those classes the model could get up to 40-55% correct. Let's try and check our bias.
+
+We can use a confusion matrix to actually look at which values were misidentified: (see ISLR pg. 171 and https://scikit-learn.org/dev/modules/generated/sklearn.metrics.confusion_matrix.html) 
+```python
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+
+cm = confusion_matrix(y, y_preds)
+disp = ConfusionMatrixDisplay(cm, display_labels=rfc.classes_)
+disp.plot(cmap='rocket', xticks_rotation=45)
+``` 
+
+<img width="1021" height="878" alt="image" src="https://github.com/user-attachments/assets/9b4dfe00-5077-4255-bebb-01751390f3e7" />
+
+Let's use our position legend to actually make sense of it:
+
+WR (Wide Receiver): 0 CB (Cornerback): 1 RB (Running Back): 2 TE (Tight End): 3 OLB (Outside Linebacker): 4 QB (Quarterback): 5 FS (Free Safety): 6 SS (Strong Safety): 7 LB (Linebacker): 8 ILB (Inside Linebacker): 9 DE (Defensive End): 10 DB (Defensive Back): 11 MLB (Middle Linebacker): 12 DT (Defensive Tackle): 13 FB (Fullback): 14 P (Punter): 15 LS (Long Snapper): 16 S (Safety): 17 HB (Halfback): 18 NT (Nose Tackle): 19 K (Kicker): 20
+
+It looks like our most common misprediction was predicting a wide receiver as a corner back. This happened 10 times. It also seems we mispredict wide receivers as free and strong safeties sometimes. These midpredictions would make sense however, since CBs, FS, and SS are the ones covering the receivers and thus need to somewhat match their characteristics.
+
+The worrying thing here might be that we didn't misidentify the bottom 3 (and even 5) positions at all. For us to not misinterpret any of those makes me think there might be something wrong with our model, such as overfitting.
+
+Let's train-test split our data with k-fold cross-validation to see.
+
+```
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold
+
+#Let's reset our X and y just to make sure it's the same as before:
+X = pred_df.drop("position", axis = 1)
+y = pred_df['position']
+y = y.astype(int) #Wanted?
+
+X_train, X_holdout, Y_train, Y_holdout = train_test_split(X, y, test_size = 0.15)
+
+max_depths = np.arange(1, 15)
+
+kf = KFold(n_splits = 5)
+depth_accuracy = np.empty(0)
+
+for i in max_depths:
+    current_rfc = RandomForestClassifier(max_depth = i)
+    
+    total_accuracy = np.empty(0)
+    for train_idx, acc_idx in kf.split(X_train):
+
+        split_X_train, split_X_acc = X_train.iloc[train_idx,:], X_train.iloc[acc_idx,:]
+        split_Y_train, split_Y_acc = Y_train.iloc[train_idx], Y_train.iloc[acc_idx]
+
+        current_rfc.fit(split_X_train, split_Y_train)
+        current_y_preds = current_rfc.predict(split_X_acc)
+
+        total_accuracy = np.append(total_accuracy, (np.sum(current_y_preds == split_Y_acc) / len(split_Y_acc)))
+
+    depth_accuracy = np.append(depth_accuracy, np.mean(total_accuracy))
+```
+
+
+
+
+
+
+
+
+###### 
 
 ### Findings
 W.I.P.
