@@ -523,7 +523,7 @@ The worrying thing here might be that we didn't misidentify the bottom 3 (and ev
 
 Let's train-test split our data with k-fold cross-validation to see.
 
-```
+```python
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold
 
@@ -556,20 +556,141 @@ for i in max_depths:
     depth_accuracy = np.append(depth_accuracy, np.mean(total_accuracy))
 ```
 
+And we can get accuracies for multiple depths:
+```python
+depth_and_accuracy = pd.DataFrame({'depth': max_depths, "accuracy": depth_accuracy})
+depth_and_accuracy.sort_values('depth', ascending=True)
+```
+<img width="282" height="906" alt="image" src="https://github.com/user-attachments/assets/29163db5-f281-4ffb-8161-cde602f1214f" />
+
+And we can make it into another confusion matrix:
+
+```python
+cm = confusion_matrix(split_Y_acc, current_y_preds)
+disp = ConfusionMatrixDisplay(cm, display_labels=current_rfc.classes_)
+disp.plot(cmap='rocket', xticks_rotation=45)
+``` 
+<img width="979" height="879" alt="image" src="https://github.com/user-attachments/assets/29510868-9522-4e95-aa83-141bafd8d178" /> 
+
+Clearly, from our depth_and_accuracy chart, my accuracy is not actually all that good. The highest it got was 41% accuracy at a depth of 6. My model before with 90% accuracy was just overfitted. That being said, I'm still actually impressed by how well the model did, and we can see from the chart above what one of the problems actually was. Looking at the top left corner of the confusion matrix, we can see that our model correctly classified 23 WR. However, it imisidentified 9 of them as CBs and on the the reverse 8 of the real CBs were classified as WRs. The same story is true for OLBs, LBs, and DEs in some folds. This concept is due to what we discussed earlier in this section. A position is often classified as its opposing side's mirror matchup. WRs and CBs have to be of similar size and probably age, so the model is going to struggle to distinguish them. Thus, a 30-45% accuracy might not be all that bad.
+
+Here is the legend once again to refer to the chart above (Unsure of how to turn the classes back into abbreviations in a confusion matrix):
+
+WR (Wide Receiver): 0 CB (Cornerback): 1 RB (Running Back): 2 TE (Tight End): 3 OLB (Outside Linebacker): 4 QB (Quarterback): 5 FS (Free Safety): 6 SS (Strong Safety): 7 LB (Linebacker): 8 ILB (Inside Linebacker): 9 DE (Defensive End): 10 DB (Defensive Back): 11 MLB (Middle Linebacker): 12 DT (Defensive Tackle): 13 FB (Fullback): 14 P (Punter): 15 LS (Long Snapper): 16 S (Safety): 17 HB (Halfback): 18 NT (Nose Tackle): 19 K (Kicker): 20
+
+At this point, there are two things I want to try. First of all, I will try another model (K-Nearest Neighbors) right below here, and then I will try one of my solutions I posed at the start of the section, and only try classifying a few positions to see if the accuracy is any better. I will try and only do positions on 1 side of the ball to eliminate the problem posed at the beginning of this cell.
 
 
+```python
+
+#KNN Model:
+from sklearn.neighbors import KNeighborsClassifier
+
+# kNeigh = KNeighborsClassifier()
+# kNeigh.fit()
+# kNeigh.
+
+X = pred_df.drop("position", axis = 1)
+y = pred_df['position']
+y = y.astype(int) #Wanted?
+
+X_train, X_holdout, Y_train, Y_holdout = train_test_split(X, y, test_size = 0.15)
+
+n_neighbors_vals = np.arange(1, 20)
+
+kf = KFold(n_splits = 5)
+neighbor_accuracy = np.empty(0)
+
+for k in n_neighbors_vals:
+    current_knn = KNeighborsClassifier(n_neighbors = k)
+    
+    total_accuracy = np.empty(0)
+    for train_idx, acc_idx in kf.split(X_train):
+
+        split_X_train, split_X_acc = X_train.iloc[train_idx,:], X_train.iloc[acc_idx,:]
+        split_Y_train, split_Y_acc = Y_train.iloc[train_idx], Y_train.iloc[acc_idx]
+
+        current_knn.fit(split_X_train, split_Y_train)
+        current_y_preds = current_knn.predict(split_X_acc)
+
+        total_accuracy = np.append(total_accuracy, (np.sum(current_y_preds == split_Y_acc) / len(split_Y_acc)))
+
+    neighbor_accuracy = np.append(neighbor_accuracy, np.mean(total_accuracy))
+
+results = np.column_stack((n_neighbors_vals, neighbor_accuracy))
+results
+```
+Gives us: 
+<img width="512" height="657" alt="image" src="https://github.com/user-attachments/assets/112e57a1-a0ab-457c-8500-9ac3ca0e92ed" /> 
+
+Here, I did another K-fold cross validation like before, but just replaced the random forest model with a K-Nearest Neighbors model. Instead of depth as the selected hyperparameter, I chose the amount of neighbors used in deciding classes. However, it seems to have done overall worse than my random forest model. This is probably because K Neighbors Classifier judges based on distance, and with so many classes of players that are so alike in stature and age some groups certainly bleed over into others. For instance, a particularly large QB and a TE might be closer in size and age than that QB is with any other QB. Although their is less variation in the accuracies, this model did not reach the same high that random forest did. I'm not certain it matters much though, as neither had an accuracy of over 40% once. Because the random forest was a bit higher, and I liked being able to visualize mispredictions with the confusion matrix, I will again use a random forest classifier, but this time, with only 5 important positions to see if it has an easier time predicting them.
+
+First, let's parse our dataframe to have those positions, then we can copy our train-test split from earlier on it.
+
+```python
+valid_positions = ['WR', 'RB', 'TE', 'QB', 'OLB']
+reduced_pred_df = fixed_nfl[['height','weight', 'player_age', 'position']]
+
+reduced_pred_df = reduced_pred_df[reduced_pred_df['position'].isin(valid_positions)]
+reduced_pred_df.loc[:,"position"] = reduced_pred_df["position"].replace(["WR", "RB", "TE", 'QB', 'OLB'], [0, 1, 2, 3, 4])
+reduced_pred_df
+```
+
+Then: 
+```python
+X = reduced_pred_df.drop("position", axis = 1)
+y = reduced_pred_df['position']
+y = y.astype(int) #Wanted?
+
+X_train_2, X_holdout_2, Y_train_2, Y_holdout_2 = train_test_split(X, y, test_size = 0.15)
+
+max_depths_2 = np.arange(1, 15)
+
+kf_2 = KFold(n_splits = 5)
+depth_accuracy_2 = np.empty(0)
+
+for i in max_depths_2:
+    current_rfc_2 = RandomForestClassifier(max_depth = i)
+    
+    total_accuracy_2 = np.empty(0)
+    for train_idx, acc_idx in kf_2.split(X_train_2):
+
+        split_X_train_2, split_X_acc_2 = X_train_2.iloc[train_idx,:], X_train_2.iloc[acc_idx,:]
+        split_Y_train_2, split_Y_acc_2 = Y_train_2.iloc[train_idx], Y_train_2.iloc[acc_idx]
+
+        current_rfc_2.fit(split_X_train_2, split_Y_train_2)
+        current_y_preds_2 = current_rfc_2.predict(split_X_acc_2)
+
+        total_accuracy_2 = np.append(total_accuracy_2, (np.sum(current_y_preds_2 == split_Y_acc_2) / len(split_Y_acc_2)))
+
+    depth_accuracy_2 = np.append(depth_accuracy_2, np.mean(total_accuracy_2))
+```
+
+And:
+```python
+depth_and_accuracy_2 = pd.DataFrame({'depth': max_depths_2, "accuracy": depth_accuracy_2})
+depth_and_accuracy_2.sort_values('depth', ascending=True)
+
+cm = confusion_matrix(split_Y_acc_2, current_y_preds_2)
+disp = ConfusionMatrixDisplay(cm, display_labels=current_rfc_2.classes_)
+disp.plot(cmap='mako', xticks_rotation=45)
+```
+
+Gives: 
+<img width="289" height="922" alt="image" src="https://github.com/user-attachments/assets/85c72e1e-d79c-4896-97f1-99b2e868144e" /> 
+and 
+<img width="1004" height="944" alt="image" src="https://github.com/user-attachments/assets/82d4a176-df01-419b-b543-d595883239b7" />
+
+Just looking at the depth_and_accuracy_2 chart, this iteration of the random forest model did much better. Our best accuracies were almost double the best accuracies of the previous model with 20 classes. A 70% accuracy at depth 6 is pretty good, and the confusion matrix shows that our model didn't just classify everything as a WR to get high accuracy. Now, these positional classes were some of the top ones in terms of values, so it is hard to say whether this model did better because there were less classes, more average samples per class, or if the classes chosen were very distinguishable from each other. I would be curious to find some way to do this type of test in a loop, where each iteration is another 5 class combination. Then you could perhaps see what the most distinguishable positions are. From the confusion matrix it looks as though the model struggled a bit to distinguish Tight Ends and Outside Line Backers. This makes sense since Tight Ends are versatile enough to block on the outside as well, thus they have similar heights and weights. Also interesting is the fact that QBs were classified as everything across the board, and they are the only class that happened to. Perhaps QBs are the most varied in terms of age and stature.
 
 
-
-
-
-###### 
 
 ### Findings
-W.I.P.
+In conclusion:
+Overall, I would say this random forest model is pretty useful, as long as you don't use too many classes. With this kind of model, if an incoming NFL player plays at multiple positions, the team he's drafted to might be able to better understand where he should be placed by comparing him to the current NFL players using it. It's also useful for seeing how varied positional statures are. However, I do not think this model is accurate enough that anyone would use it. The model struggles too much in distinguishing mirrored positions such as CB and WR with the few features it predicts with. This type of model used to predict basketball positions may do MUCH better, since the offense and defense aren't different players that have essentially the same body types.
 
-### Limitations
-W.I.P.
+Still, I think if a few more features were included in the data we could do much better at predicting. Right now, we only use height, weight, and age. Perhaps having a column in my original dataframe of minutes played or snapcount would increase the accuracy, those might vary based on offense and defense and give the model something to drive those groups apart. We could go even further and have a "receptions" variable. Since only really offensive players have any receptions, that would definitely drive apart positions WR and CB. I'm not certain that wouldn't just defeat the purpose of the model though, since if you're trying to predict a player's position seeing that a player has greather than 0 receptions eliminates half the positional roster from the get-go. It's interesting to think about though, and acknowlegding more features could be included with more data is the first step in improving this model.
+
 
 ### From Here
 W.I.P.
