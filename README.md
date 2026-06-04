@@ -454,13 +454,13 @@ We'll try a few different models, select features, and do our best to reduce err
 
 I am somewhat concerned about the AMOUNT of groups our model needs to choose between when predicting. There are so many positions, and some are certainly very closely related to others.
 
-Additionally, some of the positions, especially the bottom 3 (HB, NT, and K) have very few observations in my data, and thus may not provide enough reliable data to accurately classify those positions. I am unsure whether this will effect the model as a whole though.
+Additionally, some of the positions, especially the bottom 3 (HB, NT, and K) have very few observations in my data, and thus may not provide enough reliable data to accurately classify those positions. I am unsure whether this will affect the model as a whole though.
 
 I have 3 possible solutions assuming that it does hurt the model:
 
 I could abolish those positions altogether, K, HB, and NT are not hugely important positions to begin with and I could just take those (and possibly others if necessary) out of my dataframe completely. The issue with that is I am not sure how it will effect the predictions of the other positions. Would those change?
 I could merge those positions. This wouldn't work for Kicker, so solution 1 might still have to apply there, but Halfback (HB) and Nose Tackle (NT) are essentially just subtypes of greater positions (Runningbacks and Defensive Tackles). I could merge those subtypes with their parent positions, which would solve the sample size problem. However, these subtypes exist for a reason, and could have notable differences from their parents. Merging them with their parents will taint the parents' group data, effecting the model, perhaps not by much, but almost certainly affecting it.
-Like opion 1, I could reduce the number of positions I am classifying between as a whole. I might choose to only try and classify between WR, CB, RB, TE, QB, OLB, and maybe a safety. Those are generally the most notable and important positions on the field + LB, and they encompass the vast majority of body types and skills in football. This is what I think will end up being done.
+Like option 1, I could reduce the number of positions I am classifying between as a whole. I might choose to only try and classify between WR, CB, RB, TE, QB, OLB, and maybe a safety. Those are generally the most notable and important positions on the field + LB, and they encompass the vast majority of body types and skills in football. This is what I think will end up being done.
 I think I will try the model as it stands first, and see how it goes. If my accuracy is 95% normally then none of this matters. I'll adjust my approach as I see fit.
 
 Start with features:
