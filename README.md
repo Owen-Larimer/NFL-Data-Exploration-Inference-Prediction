@@ -420,7 +420,7 @@ one_way_results_weight
 Results in: 
 ```python
 F_onewayResult(statistic=0.916356722706692, pvalue=0.5235975579978585)
-```
+``` 
 
 In this section of our analysis, we tested whether college conference has any bearing on weights of NFL players. Let us restate that our null hypothesis (for weight portion) was that the mean weight of NFL players does not vary significantly by college conference. Again we got an f-statistic and a p-value from our ANOVA one way test.
 
